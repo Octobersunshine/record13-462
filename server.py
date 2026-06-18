@@ -5,6 +5,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 
 import psutil
 
+LOAD_THRESHOLD = float(os.environ.get("LOAD_THRESHOLD", "1.0"))
+
 
 def get_load_avg():
     cpu_count = psutil.cpu_count() or 1
@@ -28,10 +30,13 @@ class LoadHandler(BaseHTTPRequestHandler):
             return
 
         load1, load5, cpu_count = get_load_avg()
+        overload = load1 > LOAD_THRESHOLD or load5 > LOAD_THRESHOLD
         body = json.dumps({
             "load_1min": load1,
             "load_5min": load5,
             "cpu_count": cpu_count,
+            "threshold": LOAD_THRESHOLD,
+            "overload": overload,
         })
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
