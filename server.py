@@ -7,14 +7,15 @@ import psutil
 
 
 def get_load_avg():
+    cpu_count = psutil.cpu_count() or 1
+
     if platform.system() != "Windows":
         load1, load5, _ = os.getloadavg()
-        return load1, load5
+        return round(load1 / cpu_count, 4), round(load5 / cpu_count, 4), cpu_count
 
-    cpu_count = psutil.cpu_count() or 1
     cpu_percent = psutil.cpu_percent(interval=1.0)
-    load = round(cpu_percent / 100.0 * cpu_count, 2)
-    return load, load
+    relative = round(cpu_percent / 100.0, 4)
+    return relative, relative, cpu_count
 
 
 class LoadHandler(BaseHTTPRequestHandler):
@@ -26,10 +27,11 @@ class LoadHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"error": "not found"}).encode())
             return
 
-        load1, load5 = get_load_avg()
+        load1, load5, cpu_count = get_load_avg()
         body = json.dumps({
             "load_1min": load1,
             "load_5min": load5,
+            "cpu_count": cpu_count,
         })
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
